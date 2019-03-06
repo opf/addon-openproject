@@ -25,7 +25,8 @@ fi
 must_rebuild=$(${CLI} config:get MUST_REBUILD_ASSETS || echo "")
 if [ -n "$must_rebuild" ]; then
 	echo "Assets were requested to be rebuilt. Installing node dependencies..."
-        ${CLI} config:set EXECJS_RUNTIME=""
+	# Set execjs to node since that's installed
+        ${CLI} config:set EXECJS_RUNTIME="Node"
 	npm install
 else
         ${CLI} config:set EXECJS_RUNTIME="Disabled"
