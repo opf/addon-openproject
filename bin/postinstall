@@ -27,7 +27,7 @@ if [ -n "$must_rebuild" ]; then
 	echo "Assets were requested to be rebuilt. Installing node dependencies..."
 	# Set execjs to node since that's installed
         ${CLI} config:set EXECJS_RUNTIME="Node"
-	npm install
+	openproject run bash -c "cd $APP_HOME && npm install"
 else
         ${CLI} config:set EXECJS_RUNTIME="Disabled"
 fi
