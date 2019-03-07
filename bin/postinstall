@@ -19,6 +19,9 @@ if [ -n "$custom_gemfile" ] && [ -f "$custom_gemfile" ]; then
 	# Mark assets for recompilation in the OpenProject postinstall rake step
 	${CLI} config:set MUST_REBUILD_ASSETS="true"
 
+else
+	# Ensure asset flag is unset
+	${CLI} config:set MUST_REBUILD_ASSETS=""
 fi
 
 # If we don't have to rebuild assets, set EXECJS_RUNTIME
