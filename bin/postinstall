@@ -18,18 +18,20 @@ if [ -n "$custom_gemfile" ] && [ -f "$custom_gemfile" ]; then
 
 	# Mark assets for recompilation in the OpenProject postinstall rake step
 	${CLI} config:set MUST_REBUILD_ASSETS="true"
-
-else
-	# Ensure asset flag is unset
-	${CLI} config:set MUST_REBUILD_ASSETS=""
 fi
+
+server_prefix=$(${CLI} config:get SERVER_PATH_PREFIX || echo "/")
+if [ -n "$server_prefix" ] && [ "$server_prefix" != '/' ]; then
+	${CLI} config:set MUST_REBUILD_ASSETS="true"
+fi
+
 
 # If we don't have to rebuild assets, set EXECJS_RUNTIME
 must_rebuild=$(${CLI} config:get MUST_REBUILD_ASSETS || echo "")
 if [ -n "$must_rebuild" ]; then
 	echo "Assets were requested to be rebuilt. Installing node dependencies..."
 	# Set execjs to node since that's installed
-        ${CLI} config:set EXECJS_RUNTIME="Node"
+	${CLI} config:set EXECJS_RUNTIME="Node"
 	openproject run bash -c "cd $APP_HOME && npm install"
 else
         ${CLI} config:set EXECJS_RUNTIME="Disabled"
