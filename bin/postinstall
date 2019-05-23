@@ -10,41 +10,55 @@ CLI="${APP_NAME}"
 custom_gemfile=$(${CLI} config:get CUSTOM_PLUGIN_GEMFILE || echo "")
 if [ -n "$custom_gemfile" ] && [ -f "$custom_gemfile" ]; then
 
-	# Need to override the frozen setting for the vendored gems
-	${CLI} run bundle config --local frozen 0
+        # Need to override the frozen setting for the vendored gems
+        ${CLI} run bundle config --local frozen 0
 
-	# Re-bundle the application including gems
-	${CLI} run bundle install
+        # Re-bundle the application including gems
+        ${CLI} run bundle install
 
-	# Mark assets for recompilation in the OpenProject postinstall rake step
-	${CLI} config:set MUST_REBUILD_ASSETS="true"
+        # Mark backend for recompilation in the OpenProject postinstall rake step
+        echo "Custom Gemfile present. Need to recompile rails assets. Setting RECOMPILE_RAILS_ASSETS=true"
+        ${CLI} config:set RECOMPILE_RAILS_ASSETS="true"
 fi
 
+# Check for server prefix
 server_prefix=$(${CLI} config:get SERVER_PATH_PREFIX || echo "/")
-if [ -n "$server_prefix" ] && [ "$server_prefix" != '/' ]; then
-	${CLI} config:set MUST_REBUILD_ASSETS="true"
+if [ "$server_prefix" != "/" ]; then
+        echo "Server prefix is set. Need to recompile rails assets. Setting RECOMPILE_RAILS_ASSETS=true"
+        # Mark backend for recompilation in the OpenProject postinstall rake step
+        ${CLI} config:set RECOMPILE_RAILS_ASSETS="true"
+fi
+
+# Check for server prefix changes
+last_server_prefix=$(${CLI} config:get SERVER_PATH_PREFIX_PREVIOUS || echo "/")
+if [ "$last_server_prefix" != "$server_prefix" ]; then
+        echo "Server prefix was changed from ${last_server_prefix} to ${server_prefix}. Need to recompile rails assets. Setting RECOMPILE_RAILS_ASSETS=true"
+        # Mark backend for recompilation in the OpenProject postinstall rake step
+        ${CLI} config:set RECOMPILE_RAILS_ASSETS="true"
 fi
 
 
-# If we don't have to rebuild assets, set EXECJS_RUNTIME
-must_rebuild=$(${CLI} config:get MUST_REBUILD_ASSETS || echo "")
+# Check if we need to compile angular as well
+must_rebuild=$(${CLI} config:get RECOMPILE_ANGULAR_ASSETS || echo "")
 if [ -n "$must_rebuild" ]; then
-	echo "Assets were requested to be rebuilt. Installing node dependencies..."
-	# Set execjs to node since that's installed
-	${CLI} config:set EXECJS_RUNTIME="Node"
-	openproject run bash -c "cd $APP_HOME && npm install"
-else
-        ${CLI} config:set EXECJS_RUNTIME="Disabled"
+        echo "RECOMPILE_ANGULAR_ASSETS was set. Installing node dependencies..."
+        # Skip printing audit for installation
+        openproject run npm set audit false
+        openproject run npm install --silent
 fi
+
+# Set execjs to node since that's installed
+# And we can use it for backend precompilation
+${CLI} config:set EXECJS_RUNTIME="Node"
 
 rake_commands="db:migrate db:seed"
 
 # set rails_cache_store
 memcached_servers="$(${CLI} config:get MEMCACHED_SERVERS || echo "")"
 if [ -z "$memcached_servers" ]; then
-	${CLI} config:set RAILS_CACHE_STORE=file_store
+  ${CLI} config:set RAILS_CACHE_STORE=file_store
 else
-	${CLI} config:set RAILS_CACHE_STORE=memcache
+  ${CLI} config:set RAILS_CACHE_STORE=memcache
 fi
 
 # create attachments folder
@@ -82,7 +96,7 @@ ${CLI} run rake "${rake_commands} packager:postinstall"
 
 # Allow OpenProject to perform custom initialization steps in the context of this installer
 if [ -e "${APP_HOME}/packaging/scripts/postinstall" ]; then
-	source "${APP_HOME}/packaging/scripts/postinstall"
+  source "${APP_HOME}/packaging/scripts/postinstall"
 fi
 
 # scale
