@@ -70,10 +70,6 @@ ${CLI} config:set ATTACHMENTS_STORAGE_PATH="${attachments_path}"
 # set web host
 ${CLI} config:set HOST=127.0.0.1
 
-# set web concurrency
-web_concurrency=$(${CLI} config:get WEB_CONCURRENCY || echo "2")
-${CLI} config:set WEB_CONCURRENCY=${web_concurrency}
-
 # set web timeout
 web_timeout=$(${CLI} config:get WEB_TIMEOUT || echo "300")
 ${CLI} config:set WEB_TIMEOUT=${web_timeout}
