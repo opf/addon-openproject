@@ -82,7 +82,10 @@ ${CLI} config:set SECRET_KEY_BASE="$secret_token"
 ${CLI} config:set SECRET_TOKEN="$secret_token"
 
 # set installation type
-${CLI} config:set OPENPROJECT_INSTALLATION__TYPE=packager
+installation_type="$(${CLI} config:get OPENPROJECT_INSTALLATION__TYPE || echo "")"
+if [ -z "$installation_type" ]; then
+  ${CLI} config:set OPENPROJECT_INSTALLATION__TYPE=packager
+fi
 
 # Allow other tasks to run before the environment is loaded
 ${CLI} run rake "packager:before_postinstall"
